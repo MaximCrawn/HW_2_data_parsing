@@ -1,10 +1,8 @@
-#http://books.toscrape.com/
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from pprint import pprint
-
 
 ua = UserAgent()
 
@@ -25,26 +23,29 @@ while True:
 
     for book in books:
         book_info = {}
-        name_info = book.find('h3').findChildren()[0]
-        book_info['name'] = name_info.get('title')
-        book_info['url'] = url + "/" + name_info.get('href')
-        book_info['price'] = book.find('p', {'class': 'price_color'}).get_text().replace('Â', '')
-        book_info['availability'] = book.find('p', {'class': 'instock availability'}).get_text(strip=True)
+        try:
+            name_info = book.find('h3').findChildren()[0]
+            book_info['name'] = name_info.get('title', 'N/A')
+            book_info['url'] = url + "/" + name_info.get('href', '')
+        except AttributeError:
+            book_info['name'] = 'N/A'
+            book_info['url'] = 'N/A'
         
-
+        price = book.find('p', {'class': 'price_color'})
+        book_info['price'] = price.get_text().replace('Â', '') if price else 'N/A'
+        
+        availability = book.find('p', {'class': 'instock availability'})
+        book_info['availability'] = availability.get_text(strip=True) if availability else 'N/A'
 
         all_books.append(book_info)
 
-    # Обновляем строку в консоли (перезаписываем номер страницы)
-    print(f'\rОбработана {page} страница', end='')
+    print(f'\rProcessed page {page}', end='')
     page += 1
 
-# pprint(all_books)
 df = pd.DataFrame(all_books)
 
-# Сохраняем DataFrame в CSV файл
 df.to_csv('books.csv', index=False, encoding='utf-8')
 
-# Выводим DataFrame для проверки
 print("\nДанные сохранены в файл books.csv")
 pprint(df.head())
+
